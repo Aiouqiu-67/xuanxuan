@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>明天中午吃什么？- 极速颜文字版</title>
+    <style>
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            color: #333;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            width: 90%;
+            max-width: 420px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            font-size: 26px;
+            margin-bottom: 10px;
+            color: #ff6b6b;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 25px;
+        }
+
+        .food-display {
+            background: #fff3f3;
+            border: 2px dashed #ff9a9e;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            min-height: 220px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        /* 超大 Emoji 样式 */
+        .food-emoji {
+            font-size: 80px;
+            margin-bottom: 15px;
+            display: none;
+            animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .food-name {
+            font-size: 30px;
+            font-weight: bold;
+            color: #d63031;
+            margin-bottom: 8px;
+            transition: color 0.3s ease;
+        }
+
+        .food-desc {
+            font-size: 14px;
+            color: #636e72;
+            min-height: 20px;
+        }
+
+        button {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        button:hover {
+            background: #ff5252;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🍱 明天中午吃什么？</h1>
+    <div class="subtitle">专治各种选择困难症</div>
+
+    <div class="food-display" id="displayArea">
+        <div class="food-emoji" id="foodEmoji">😋</div>
+        <div class="food-name" id="foodName">???</div>
+        <div class="food-desc" id="foodDesc">点击下方按钮开始随机抽取</div>
+    </div>
+
+    <button id="rollBtn" onclick="startRolling()">帮我决定！</button>
+</div>
+
+<script>
+    // 菜单库：换成了对应的 Emoji 表情和颜色
+    const menus = [
+        { name: "红油抄手配大肉丸", desc: "红油的快乐加上扎实的肉丸，满分过瘾！", color: "#e02424", emoji: "🥟🧆" },
+        { name: "黄焖鸡米饭", desc: "国民级快餐永远的神，浓郁汤汁必须拌饭。", color: "#d97706", emoji: "🥘🍚" },
+        { name: "学校食堂盲选", desc: "走出实验室，去食堂随便挑一个排队人最少的窗口。", color: "#4b5563", emoji: "👨‍🍳🍽️" },
+        { name: "隆江猪脚饭", desc: "软糯香甜，男人的浪漫，女人的胶原蛋白。", color: "#92400e", emoji: "🍖🍚" },
+        { name: "麻辣烫 / 香锅", desc: "不知道吃什么的时候，把喜欢的菜全煮在一起就对了。", color: "#dc2626", emoji: "🍢🍲" },
+        { name: "麦当劳 / 肯德基", desc: "快乐周四也好，随心配也好，快餐是打工人的避风港。", color: "#ea580c", emoji: "🍔🍟" },
+        { name: "轻食减脂沙拉", desc: "欺骗一下自己，假装今天吃得非常健康无负担。", color: "#16a34a", emoji: "🥗🥑" },
+        { name: "兰州拉面", desc: "来一碗热气腾腾的碳水，多加点辣子和醋。", color: "#2563eb", emoji: "🍜🥢" },
+        { name: "随便点个外卖", desc: "天大地大，能在电脑前边吃边看剧最大。", color: "#475569", emoji: "🛵🥡" },
+        { name: "新疆炒米粉", desc: "爆辣警告！吃完下午回实验室保准一点都不犯困。", color: "#b91c1c", emoji: "🍝🌶️" }
+    ];
+
+    let timer = null;
+    let isRolling = false;
+
+    function startRolling() {
+        if (isRolling) return;
+        
+        const btn = document.getElementById('rollBtn');
+        const nameEl = document.getElementById('foodName');
+        const descEl = document.getElementById('foodDesc');
+        const emojiEl = document.getElementById('foodEmoji');
+        
+        isRolling = true;
+        btn.disabled = true;
+        btn.innerText = '拼命思考中...';
+        descEl.innerText = ''; 
+        emojiEl.style.display = 'none'; 
+        nameEl.style.color = '#d63031'; 
+
+        let count = 0;
+        timer = setInterval(() => {
+            const randomFood = menus[Math.floor(Math.random() * menus.length)];
+            nameEl.innerText = randomFood.name;
+            count++;
+
+            if (count > 30) {
+                clearInterval(timer);
+                stopRolling();
+            }
+        }, 50);
+    }
+
+    function stopRolling() {
+        const btn = document.getElementById('rollBtn');
+        const nameEl = document.getElementById('foodName');
+        const descEl = document.getElementById('foodDesc');
+        const emojiEl = document.getElementById('foodEmoji');
+        const display = document.getElementById('displayArea');
+
+        const finalChoice = menus[Math.floor(Math.random() * menus.length)];
+        
+        // 更新文字、颜色和 Emoji
+        nameEl.innerText = finalChoice.name;
+        nameEl.style.color = finalChoice.color; 
+        emojiEl.innerText = finalChoice.emoji;
+        emojiEl.style.display = 'block'; 
+        descEl.innerText = finalChoice.desc;
+
+        isRolling = false;
+        btn.disabled = false;
+        btn.innerText = '不满意，换一个！';
+        
+        display.style.transform = 'scale(1.05)';
+        display.style.borderColor = finalChoice.color;
+        setTimeout(() => {
+            display.style.transform = 'scale(1)';
+            display.style.borderColor = '#ff9a9e';
+        }, 200);
+    }
+</script>
+
+</body>
+</html>
