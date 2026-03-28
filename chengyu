@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>墨韵 · 成语接龙</title>
+    <style>
+        /* =========================================
+           1. 国风主题颜色与排版
+           ========================================= */
+        :root {
+            --bg-color: #f6f4ec; /* 宣纸底色 */
+            --text-main: #333333; /* 墨黑 */
+            --accent-red: #8a181a; /* 印泥红 */
+            --border-color: #dcd3b2; /* 旧纸边缘 */
+            --bot-bubble: #ffffff;
+            --user-bubble: #e8dfc8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'KaiTi', '楷体', 'STKaiti', serif; /* 强制使用楷体，增加国风感 */
+            background-color: var(--bg-color);
+            background-image: radial-gradient(#dcd3b2 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 500px;
+            height: 85vh;
+            background: rgba(255, 255, 255, 0.85);
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 顶部标题栏 */
+        .header {
+            background: var(--accent-red);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 24px;
+            letter-spacing: 4px;
+            position: relative;
+        }
+        .header::after {
+            content: "CHENG YU";
+            position: absolute;
+            right: 15px;
+            bottom: 5px;
+            font-size: 12px;
+            opacity: 0.5;
+            letter-spacing: 1px;
+            font-family: sans-serif;
+        }
+
+        /* =========================================
+           2. 聊天区域 (接龙历史)
+           ========================================= */
+        .chat-box {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 18px;
+            border-radius: 8px;
+            font-size: 18px;
+            line-height: 1.5;
+            position: relative;
+            animation: fadeIn 0.4s ease forwards;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 机器人气泡 (居左) */
+        .msg-bot {
+            align-self: flex-start;
+            background-color: var(--bot-bubble);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--accent-red);
+        }
+
+        /* 用户气泡 (居右) */
+        .msg-user {
+            align-self: flex-end;
+            background-color: var(--user-bubble);
+            border: 1px solid var(--border-color);
+            border-right: 4px solid #5a4a34;
+        }
+
+        .highlight {
+            color: var(--accent-red);
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        /* =========================================
+           3. 底部输入区域
+           ========================================= */
+        .input-area {
+            display: flex;
+            padding: 15px;
+            background: #fff;
+            border-top: 1px solid var(--border-color);
+        }
+
+        input {
+            flex: 1;
+            padding: 12px 15px;
+            font-size: 18px;
+            font-family: 'KaiTi', '楷体', serif;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            outline: none;
+            background: var(--bg-color);
+            transition: all 0.3s;
+        }
+        input:focus {
+            border-color: var(--accent-red);
+            box-shadow: 0 0 8px rgba(138, 24, 26, 0.2);
+        }
+
+        button {
+            margin-left: 10px;
+            padding: 0 25px;
+            background: var(--accent-red);
+            color: white;
+            font-family: 'KaiTi', '楷体', serif;
+            font-size: 18px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #a32224;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* 游戏结束时的遮罩 */
+        .game-over-banner {
+            text-align: center;
+            padding: 15px;
+            background: var(--bg-color);
+            color: var(--accent-red);
+            font-weight: bold;
+            font-size: 18px;
+            border-top: 1px solid var(--border-color);
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">墨韵 · 成语接龙</div>
+    
+    <div class="chat-box" id="chatBox">
+        </div>
+
+    <div class="input-area" id="inputArea">
+        <input type="text" id="wordInput" placeholder="请输入四字成语..." autocomplete="off">
+        <button id="submitBtn" onclick="userPlay()">落笔</button>
+    </div>
+    
+    <div class="game-over-banner" id="gameOverBanner">
+        <span id="endMsg">游戏结束</span>
+        <br><br>
+        <button onclick="location.reload()" style="font-size: 16px; padding: 8px 20px;">再来一局</button>
+    </div>
+</div>
+
+<script>
+    /* =========================================
+       核心逻辑与迷你词库
+       ========================================= */
+    // 内置一个精简版的成语词库（用于机器人接招）
+    // 为了保证游戏体验，包含了几百个常见的首尾相连的成语
+    const rawDictionary = "海阔天空,空前绝后,后来居上,上下其手,手到病除,除暴安良,良药苦口,口是心非,非同小可,可歌可泣,泣不成声,声东击西,西装革履,履险如夷,夷为平地,地大物博,博大精深,深不可测,深思熟虑,虑周藻密,密不透风,风和日丽,丽日临空,空穴来风,风言风语,语重心长,长此以往,往返徒劳,劳民伤财,财源广进,进退两难,难能可贵,贵不可言,言行一致,致远任重,重见天日,日新月异,异想天开,开门见山,山清水秀,秀外慧中,中流砥柱,大显身手,手足情深,深明大义,义薄云天,天作之合,合家欢乐,乐极生悲,悲欢离合,合二为一,一言九鼎,鼎鼎大名,名不虚传,传宗接代,代代相传,传道受业,业精于勤,勤能补拙,拙嘴笨舌,舌剑唇枪,枪林弹雨,雨过天晴,晴天霹雳,雳风惊雷,雷厉风行,行云流水,水落石出,出生入死,死里逃生,生机勃勃,勃然大怒,怒气冲天,天罗地网,网开一面,面目全非,非分之想,想入非非,非亲非故,故弄玄虚,虚情假意,意气风发,发扬光大,大展宏图,图穷匕见,见义勇为,为民除害,害群之马,马到成功,功成名就,就事论事,事半功倍,倍道而行,行之有效,效犬马劳,劳苦功高,高枕无忧,忧心忡忡,破釜沉舟,舟车劳顿,顿开茅塞,塞翁失马,不可思议,议论纷纷,纷至沓来,来日方长,长生不老,老谋深算,算无遗策,策马奔腾,腾云驾雾,雾里看花,花言巧语,语出惊人,人山人海,海枯石烂,烂醉如泥,泥牛入海,百发百中,中西合璧,璧合珠联,联袂而至,至高无上,上善若水,水到渠成,成家立业,业余爱好,好大喜功,功德无量,量力而行,行侠仗义,义不容辞,辞旧迎新,新陈代谢,谢天谢地,地动山摇,摇摇欲坠,坠欢重拾,拾金不昧,昧道瞒违,违章操作,作茧自缚,缚手缚脚,脚踏实地,地久天长,长治久安,安居乐业,业绍箕裘,裘马轻狂,狂风暴雨,雨后春笋,笋月生风,风平浪静,静观其变,变化多端,端本正源,源源不断,断垣残壁,壁垒森严,严阵以待,待人接物,物尽其用,用心良苦,苦尽甘来,来者不拒,拒之门外,外强中干,干脆利落,落花流水,水乳交融,融会贯通,通情达理,理直气壮,壮志凌云,云开见日,日理万机,机变如神,神通广大,大快人心,心想事成,成仁取义,义正辞严,严惩不贷,贷没不辱,辱门败户,户枢不蠹,蠹国害民,民富国强,强词夺理,理所当然,然荻读书,书香门第,第一无二,二龙戏珠,珠光宝气,气象万千,千军万马,马首是瞻,瞻前顾后,后患无穷,穷途末路,路不拾遗,遗臭万年,年年有余,余音绕梁,梁上君子,子虚乌有,有备无患,患难与共,共襄盛举,举一反三,三心二意,意兴阑珊,珊珊来迟,迟暮之年,年少轻狂";
+
+    const botDictionary = rawDictionary.split(',');
+    
+    // 用于记录已经使用过的成语，防止死循环
+    const usedWords = new Set();
+    
+    // 当前需要接的字
+    let currentLastChar = "";
+    
+    const chatBox = document.getElementById('chatBox');
+    const inputEl = document.getElementById('wordInput');
+    const submitBtn = document.getElementById('submitBtn');
+    const inputArea = document.getElementById('inputArea');
+    const gameOverBanner = document.getElementById('gameOverBanner');
+    const endMsg = document.getElementById('endMsg');
+
+    // 添加聊天气泡到界面的函数
+    function appendMessage(text, sender) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${sender === 'bot' ? 'msg-bot' : 'msg-user'}`;
+        msgDiv.innerHTML = text;
+        chatBox.appendChild(msgDiv);
+        
+        // 自动滚动到底部
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    // 游戏初始化，机器人先出招
+    function startGame() {
+        const startWords = ["海阔天空", "破釜沉舟", "行云流水", "高枕无忧", "百发百中"];
+        const firstWord = startWords[Math.floor(Math.random() * startWords.length)];
+        
+        usedWords.add(firstWord);
+        currentLastChar = firstWord.charAt(firstWord.length - 1);
+        
+        setTimeout(() => {
+            appendMessage(`阁下请了！我先出题：<span class="highlight">${firstWord}</span>。<br>请接以「<span class="highlight">${currentLastChar}</span>」字开头的成语！`, 'bot');
+            inputEl.focus();
+        }, 500);
+    }
+
+    // 用户提交成语
+    function userPlay() {
+        const userInput = inputEl.value.trim();
+        
+        // 基础校验
+        if (!userInput) return;
+        
+        if (userInput.length !== 4) {
+            appendMessage("规则提示：必须是<b>四个字</b>的成语哦！", 'bot');
+            inputEl.value = '';
+            inputEl.focus();
+            return;
+        }
+
+        const userFirstChar = userInput.charAt(0);
+        const userLastChar = userInput.charAt(3);
+
+        // 校验是否接上了前一个字
+        if (userFirstChar !== currentLastChar) {
+            appendMessage(`接错了哦！你需要用「<span class="highlight">${currentLastChar}</span>」字开头，而你输入的是「${userInput}」。`, 'bot');
+            inputEl.value = '';
+            inputEl.focus();
+            return;
+        }
+
+        // 校验是否重复使用
+        if (usedWords.has(userInput)) {
+            appendMessage(`「${userInput}」已经被用过啦，换一个吧！`, 'bot');
+            inputEl.value = '';
+            inputEl.focus();
+            return;
+        }
+
+        // 校验通过，记录用户输入
+        usedWords.add(userInput);
+        appendMessage(userInput, 'user');
+        inputEl.value = '';
+        inputEl.disabled = true;
+        submitBtn.disabled = true;
+
+        // 更新当前需要接的字
+        currentLastChar = userLastChar;
+
+        // 机器人思考延迟
+        setTimeout(() => {
+            botPlay();
+        }, 800);
+    }
+
+    // 机器人回合逻辑
+    function botPlay() {
+        // 在词库中寻找以 currentLastChar 开头，且没被使用过的成语
+        const foundWord = botDictionary.find(word => 
+            word.startsWith(currentLastChar) && !usedWords.has(word)
+        );
+
+        if (foundWord) {
+            // 机器人找到了词
+            usedWords.add(foundWord);
+            currentLastChar = foundWord.charAt(3);
+            
+            appendMessage(`我接：<span class="highlight">${foundWord}</span>。<br>该你接「<span class="highlight">${currentLastChar}</span>」字了！`, 'bot');
+            
+            // 恢复输入
+            inputEl.disabled = false;
+            submitBtn.disabled = false;
+            inputEl.focus();
+        } else {
+            // 机器人词穷了
+            appendMessage(`哎呀，以「${currentLastChar}」字开头的成语，老夫一时竟然想不出来...`, 'bot');
+            setTimeout(() => {
+                endGame(true);
+            }, 600);
+        }
+    }
+
+    // 结束游戏
+    function endGame(userWon) {
+        inputArea.style.display = 'none';
+        gameOverBanner.style.display = 'block';
+        
+        if (userWon) {
+            endMsg.innerHTML = "🎉 恭喜阁下！才高八斗，你赢了！";
+        } else {
+            endMsg.innerHTML = "💡 游戏结束。";
+        }
+    }
+
+    // 绑定回车键提交
+    inputEl.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            userPlay();
+        }
+    });
+
+    // 启动游戏
+    startGame();
+</script>
+
+</body>
+</html>
