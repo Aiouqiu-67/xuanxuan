@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>王者荣耀：迷雾猜英雄 (Ultra 50+)</title>
+    <style>
+        /* 保持专业MOBA UI风 */
+        :root {
+            --primary-blue: #0f1c3f;
+            --secondary-blue: #233e7e;
+            --accent-gold: #c69c6d;
+            --bright-gold: #f5d0a9;
+            --bg-dark: #070b14;
+            --text-white: #ffffff;
+            --correct-green: #2ecc71;
+            --incorrect-red: #e74c3c;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-white);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            background-image: radial-gradient(circle at center, var(--primary-blue) 0%, var(--bg-dark) 100%);
+        }
+
+        .game-container {
+            background: rgba(15, 28, 63, 0.7);
+            border-radius: 20px;
+            width: 90%;
+            max-width: 480px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(198, 156, 109, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(198, 156, 109, 0.2);
+        }
+
+        .stat-item {
+            font-size: 14px;
+            color: var(--accent-gold);
+            font-weight: bold;
+        }
+        .stat-value {
+            font-size: 18px;
+            color: var(--bright-gold);
+            margin-left: 5px;
+        }
+
+        .avatar-container {
+            position: relative;
+            width: 170px;
+            height: 170px;
+            margin: 0 auto 25px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 6px solid var(--accent-gold);
+            box-shadow: 0 0 20px rgba(198, 156, 109, 0.5);
+            transition: all 0.5s ease;
+        }
+
+        .hero-avatar {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            /* 默认高强度模糊 */
+            filter: blur(18px) brightness(0.9);
+            transition: filter 0.5s ease;
+        }
+
+        .hero-avatar.hint {
+            filter: blur(8px) brightness(1);
+        }
+
+        .hero-avatar.revealed {
+            filter: blur(0px) brightness(1);
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid var(--secondary-blue);
+            border-radius: 12px;
+            color: var(--text-white);
+            font-size: 18px;
+            text-align: center;
+            margin-bottom: 15px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--accent-gold);
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        button {
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-submit {
+            background-color: var(--accent-gold);
+            color: var(--bg-dark);
+            grid-column: 1 / -1;
+        }
+
+        .btn-hint {
+            background-color: rgba(35, 62, 126, 0.5);
+            color: var(--accent-gold);
+        }
+
+        .btn-skip {
+            background-color: rgba(231, 76, 60, 0.1);
+            color: var(--incorrect-red);
+        }
+
+        .btn-next {
+            background-color: var(--correct-green);
+            color: white;
+            grid-column: 1 / -1;
+            display: none;
+        }
+
+        #messageArea {
+            margin-top: 18px;
+            min-height: 22px;
+            font-size: 15px;
+            font-weight: bold;
+        }
+
+        .correct-text { color: var(--correct-green); }
+        .incorrect-text { color: var(--incorrect-red); }
+        .hint-text { color: var(--bright-gold); font-weight: normal; font-size: 14px;}
+        .shake { animation: shake 0.4s ease; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container" id="gameWindow">
+    <div class="game-header">
+        <div class="stat-item">回合<span class="stat-value" id="roundIndicator">1/50</span></div>
+        <div class="stat-item">当前积分<span class="stat-value" id="scoreIndicator">0</span></div>
+    </div>
+
+    <div class="avatar-container">
+        <img id="heroAvatar" class="hero-avatar" src="" alt="猜猜我是谁？">
+    </div>
+
+    <input type="text" id="userInput" placeholder="输入英雄名字 (例如: 孙悟空)" autocomplete="off">
+
+    <div class="btn-group" id="btnGroupNormal">
+        <button class="btn-hint" id="hintBtn" onclick="useHint()">查看提示 (-5分)</button>
+        <button class="btn-skip" onclick="skipHero()">跳过本题</button>
+        <button class="btn-submit" onclick="submitAnswer()">认定名字</button>
+    </div>
+    
+    <div class="btn-group" id="btnGroupNext" style="display: none;">
+        <button class="btn-next" id="nextBtn" onclick="nextRound()">下一回合</button>
+    </div>
+
+    <div id="messageArea">你已准备好建立星轨吗？点击下方感应</div>
+</div>
+
+<script>
+    /* ====================================
+       核心：超大号 50 英雄全明星数据池
+       (严格保证各分路均有大量代表)
+       ==================================== */
+    const heroesData = [
+        // 对抗路 (战士/坦克)
+        { name: "孙悟空", lane: "刺客/战士", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/167/167.jpg" },
+        { name: "铠", lane: "战士/坦克", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/193/193.jpg" },
+        { name: "吕布", lane: "战士/坦克", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/123/123.jpg" },
+        { name: "花木兰", lane: "战士/刺客", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/154/154.jpg" },
+        { name: "李信", lane: "战士/刺客", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/106/106.jpg" }, // 
+        { name: "夏侯惇", lane: "战士/坦克", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/166/166.jpg" },
+        { name: "程咬金", lane: "战士/坦克", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/130/130.jpg" },
+        { name: "老夫子", lane: "战士/坦克", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/122/122.jpg" },
+        { name: "白起", lane: "坦克/战士", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/120/120.jpg" },
+        { name: "杨戬", lane: "战士/刺客", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/178/178.jpg" },
+        { name: "廉颇", lane: "坦克/战士", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/105/105.jpg" },
+        { name: "项羽", lane: "坦克/战士", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/135/135.jpg" },
+
+        // 打野 (刺客/战士)
+        { name: "铠", lane: "战士/打野", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/193/193.jpg" }, // 重复项用于覆盖多路
+        { name: "李白", lane: "刺客/打野", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/131/131.jpg" },
+        { name: "韩信", lane: "刺客/打野", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/150/150.jpg" },
+        { name: "娜可露露", lane: "刺客/打野", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/162/162.jpg" },
+        { name: "露娜", lane: "刺客/打野", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/146/146.jpg" },
+        { name: "阿轲", lane: "刺客/打野", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/101/101.jpg" },
+        { name: "赵云", lane: "战士/打野", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/117/117.jpg" },
+        { name: "百里玄策", lane: "刺客/打野", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/195/195.jpg" },
+        { name: "兰陵王", lane: "刺客/打野", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/153/153.jpg" },
+        { name: "李信", lane: "打野", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/106/106.jpg" }, // 李信打野
+        { name: "曜", lane: "战士/打野", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/522/522.jpg" },
+
+        // 中路 (法师)
+        { name: "王昭君", lane: "中路法师", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/109/109.jpg" },
+        { name: "妲己", lane: "中路法师", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/109/109-moblie-show-2.jpg" },
+        { name: "嬴政", lane: "中路法师", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/110/110.jpg" },
+        { name: "诸葛亮", lane: "中路法师", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/190/190.jpg" },
+        { name: "小乔", lane: "中路法师", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/106/106-moblie-show-1.jpg" },
+        { name: "貂蝉", lane: "法师/刺客", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/141/141.jpg" },
+        { name: "周瑜", lane: "中路法师", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/124/124.jpg" },
+        { name: "上官婉儿", lane: "法师/刺客", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/513/513.jpg" },
+        { name: "干将莫邪", lane: "中路法师", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/182/182.jpg" },
+        { name: "米莱狄", lane: "中路法师", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/504/504.jpg" },
+
+        // 发育路 (射手)
+        { name: "后羿", lane: "发育路射手", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/169/169.jpg" },
+        { name: "鲁班七号", lane: "发育路射手", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/112/112.jpg" },
+        { name: "狄仁杰", lane: "发育路射手", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/133/133.jpg" },
+        { name: "百里守约", lane: "射手/刺客", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/196/196.jpg" },
+        { name: "伽罗", lane: "发育路射手", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/123/123-moblie-show-2.jpg" },
+        { name: "公孙离", lane: "射手/刺客", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/199/199.jpg" },
+        { name: "马克波罗", lane: "发育路射手", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/132/132.jpg" },
+        { name: "孙尚香", lane: "发育路射手", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/111/111.jpg" },
+        { name: "成吉思汗", lane: "发育路射手", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/177/177.jpg" },
+        { name: "黄忠", lane: "发育路射手", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/123/123-moblie-show-4.jpg" },
+
+        // 游走 (游走/辅助)
+        { name: "蔡文姬", lane: "游走/辅助", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/184/184.jpg" },
+        { name: "东皇太一", lane: "坦克/辅助", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/187/187.jpg" },
+        { name: "大乔", lane: "游走/辅助", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/191/191.jpg" },
+        { name: "瑶", lane: "游走/辅助", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/505/505.jpg" },
+        { name: "明世隐", lane: "游走/辅助", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/501/501.jpg" },
+        { name: "牛魔", lane: "坦克/辅助", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/168/168.jpg" },
+        { name: "庄周", lane: "坦克/辅助", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/113/113.jpg" },
+        { name: "太乙真人", lane: "游走/辅助", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/186/186.jpg" },
+        { name: "张飞", lane: "坦克/辅助", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/171/171.jpg" },
+        { name: "刘禅", lane: "坦克/辅助", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/114/114.jpg" },
+    ];
+
+    let currentHeroIndex = 0;
+    let score = 0;
+    let isHintUsed = false;
+    let isRoundFinished = false;
+
+    // 打乱顺序函数
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    // 初始化新的乱序英雄数组
+    let shuffledHeroes;
+    function initShuffledPool() {
+        shuffledHeroes = shuffle([...heroesData]).slice(0, 50); // 确保取整 50 个
+    }
+    initShuffledPool();
+
+    function startRound() {
+        const input = document.getElementById('userInput');
+        const img = document.getElementById('heroAvatar');
+        const msg = document.getElementById('messageArea');
+        const hintBtn = document.getElementById('hintBtn');
+        
+        isHintUsed = false;
+        isRoundFinished = false;
+        
+        document.getElementById('roundIndicator').innerText = `${currentHeroIndex + 1}/${shuffledHeroes.length}`;
+        document.getElementById('scoreIndicator').innerText = score;
+        
+        img.src = shuffledHeroes[currentHeroIndex].imgSrc;
+        img.classList.remove('revealed', 'hint');
+        
+        document.getElementById('btnGroupNormal').style.display = 'grid';
+        document.getElementById('btnGroupNext').style.display = 'none';
+        
+        input.value = '';
+        input.disabled = false;
+        input.focus();
+        msg.innerText = "根据荣耀荣耀迷雾感应，输入这位英雄的名字";
+        msg.className = '';
+        hintBtn.innerText = '查看分路提示 (-5分)';
+        hintBtn.disabled = false;
+    }
+
+    function submitAnswer() {
+        if (isRoundFinished) return;
+        
+        const inputEl = document.getElementById('userInput');
+        const msgEl = document.getElementById('messageArea');
+        const userAnswer = inputEl.value.trim();
+        const correctAnswer = shuffledHeroes[currentHeroIndex].name;
+
+        if (!userAnswer) {
+            msgEl.innerText = "你是想用意念传达答案吗？名字还没感应出来！";
+            msgEl.className = 'shake';
+            setTimeout(() => msgEl.className = '', 400);
+            return;
+        }
+
+        if (userAnswer === correctAnswer) {
+            const roundScore = 20 - (isHintUsed ? 5 : 0);
+            score += roundScore;
+            
+            finishRoundSuccess(correctAnswer, roundScore);
+        } else {
+            msgEl.innerText = `不对不对，这不是「${userAnswer}」！荣耀荣耀迷雾还在暗中发笑！`;
+            msgEl.className = 'shake incorrect-text';
+            inputEl.value = '';
+            inputEl.focus();
+        }
+    }
+
+    function finishRoundSuccess(heroName, points) {
+        isRoundFinished = true;
+        const inputEl = document.getElementById('userInput');
+        const imgEl = document.getElementById('heroAvatar');
+        const msgEl = document.getElementById('messageArea');
+        const nextBtn = document.getElementById('nextBtn');
+
+        document.getElementById('scoreIndicator').innerText = score;
+        inputEl.disabled = true;
+        document.getElementById('hintBtn').disabled = true;
+        
+        imgEl.classList.add('revealed');
+
+        msgEl.innerHTML = `✅ 感应建立！这是王者全明星「${heroName}」！<span class="correct-text">(+${points}分)</span>`;
+        msgEl.className = 'correct-text';
+
+        document.getElementById('btnGroupNormal').style.display = 'none';
+        document.getElementById('btnGroupNext').style.display = 'block';
+        
+        if (currentHeroIndex === shuffledHeroes.length - 1) {
+            nextBtn.innerText = '荣耀王者集结完成！查看最终星轨评级';
+            nextBtn.onclick = endGame;
+        } else {
+            nextBtn.focus();
+        }
+    }
+
+    function useHint() {
+        if (isHintUsed || isRoundFinished) return;
+        
+        const imgEl = document.getElementById('heroAvatar');
+        const msgEl = document.getElementById('messageArea');
+        const hintBtn = document.getElementById('hintBtn');
+        
+        isHintUsed = true;
+        imgEl.classList.add('hint');
+        
+        hintBtn.innerText = '已感应分路，荣耀积分下降';
+        hintBtn.disabled = true;
+        
+        const heroLane = shuffledHeroes[currentHeroIndex].lane;
+        msgEl.innerHTML = `建立荣耀连接，开启提示：这位英雄的主要荣耀分路是「${heroLane}」！`;
+        msgEl.className = 'hint-text';
+        
+        document.getElementById('userInput').focus();
+    }
+
+    function skipHero() {
+        if (isRoundFinished) return;
+        
+        isRoundFinished = true;
+        const correctAnswer = shuffledHeroes[currentHeroIndex].name;
+        finishRoundRevealed(correctAnswer, `你不记得我的全部荣耀了吗？我是「${correctAnswer}」！`);
+    }
+    
+    function finishRoundRevealed(heroName, message) {
+        const inputEl = document.getElementById('userInput');
+        const imgEl = document.getElementById('heroAvatar');
+        const msgEl = document.getElementById('messageArea');
+        const nextBtn = document.getElementById('nextBtn');
+
+        inputEl.disabled = true;
+        imgEl.classList.add('revealed');
+        
+        msgEl.innerText = message;
+        msgEl.className = '';
+
+        document.getElementById('btnGroupNormal').style.display = 'none';
+        document.getElementById('btnGroupNext').style.display = 'block';
+        
+        if (currentHeroIndex === shuffledHeroes.length - 1) {
+            nextBtn.innerText = '荣耀王者集结完成！查看最终星轨评级';
+            nextBtn.onclick = endGame;
+        } else {
+            nextBtn.focus();
+        }
+    }
+
+    function nextRound() {
+        if (currentHeroIndex < shuffledHeroes.length - 1) {
+            currentHeroIndex++;
+            startRound();
+        }
+    }
+
+    function endGame() {
+        const gameWin = document.getElementById('gameWindow');
+        const totalRound = shuffledHeroes.length;
+        
+        let evaluation;
+        const perfectScore = totalRound * 20;
+        if (score === perfectScore) evaluation = "荣耀典藏之巅！荣耀全分路星轨感应完全同步！";
+        else if (score >= totalRound * 15) evaluation = "荣耀王者五分路全通！荣耀极度清晰！";
+        else if (score >= totalRound * 10) evaluation = "荣耀星耀，距离荣耀典藏只差一线荣耀感应";
+        else evaluation = "荣耀铂金，还需更多全分路荣耀连接与星轨尝试";
+
+        gameWin.innerHTML = `
+            <h1>🌟 王者集结完成 Ultra 50+ 🌟</h1>
+            <br>
+            <div style="font-size: 20px; color: var(--accent-gold);">最终星轨感应积分</div>
+            <div style="font-size: 60px; font-weight: bold; color: var(--bright-gold);">${score}</div>
+            <br>
+            <div style="font-size: 16px; color: rgba(255,255,255,0.8); line-height: 1.8;">
+                你已成功建立对 ${totalRound} 位荣耀王者的星轨感应。<br>
+                荣耀感应评级：${evaluation}
+            </div>
+            <br>
+            <button class="btn-submit" onclick="location.reload()">重新建立五分路星轨连接</button>
+        `;
+    }
+
+    document.getElementById('userInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') submitAnswer();
+    });
+
+    startRound();
+</script>
+
+</body>
+</html>
