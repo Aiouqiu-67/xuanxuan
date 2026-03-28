@@ -209,7 +209,7 @@
         { name: "铠", lane: "战士/坦克", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/193/193.jpg" },
         { name: "吕布", lane: "战士/坦克", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/123/123.jpg" },
         { name: "花木兰", lane: "战士/刺客", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/154/154.jpg" },
-        { name: "李信", lane: "战士/刺客", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/106/106.jpg" }, // 
+        { name: "李信", lane: "战士/刺客", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/106/106.jpg" }, 
         { name: "夏侯惇", lane: "战士/坦克", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/166/166.jpg" },
         { name: "程咬金", lane: "战士/坦克", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/130/130.jpg" },
         { name: "老夫子", lane: "战士/坦克", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/122/122.jpg" },
@@ -219,7 +219,7 @@
         { name: "项羽", lane: "坦克/战士", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/135/135.jpg" },
 
         // 打野 (刺客/战士)
-        { name: "铠", lane: "战士/打野", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/193/193.jpg" }, // 重复项用于覆盖多路
+        { name: "铠", lane: "战士/打野", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/193/193.jpg" }, 
         { name: "李白", lane: "刺客/打野", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/131/131.jpg" },
         { name: "韩信", lane: "刺客/打野", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/150/150.jpg" },
         { name: "娜可露露", lane: "刺客/打野", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/162/162.jpg" },
@@ -228,7 +228,7 @@
         { name: "赵云", lane: "战士/打野", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/117/117.jpg" },
         { name: "百里玄策", lane: "刺客/打野", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/195/195.jpg" },
         { name: "兰陵王", lane: "刺客/打野", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/153/153.jpg" },
-        { name: "李信", lane: "打野", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/106/106.jpg" }, // 李信打野
+        { name: "李信", lane: "打野", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/106/106.jpg" },
         { name: "曜", lane: "战士/打野", imgSrc: "https://game.gtimg.cn/images/yxzj/img201606/heroimg/522/522.jpg" },
 
         // 中路 (法师)
@@ -310,7 +310,7 @@
         input.value = '';
         input.disabled = false;
         input.focus();
-        msg.innerText = "根据荣耀荣耀迷雾感应，输入这位英雄的名字";
+        msg.innerText = "根据荣耀迷雾感应，输入这位英雄的名字";
         msg.className = '';
         hintBtn.innerText = '查看分路提示 (-5分)';
         hintBtn.disabled = false;
@@ -337,7 +337,7 @@
             
             finishRoundSuccess(correctAnswer, roundScore);
         } else {
-            msgEl.innerText = `不对不对，这不是「${userAnswer}」！荣耀荣耀迷雾还在暗中发笑！`;
+            msgEl.innerText = `不对不对，这不是「${userAnswer}」！迷雾还在暗中发笑！`;
             msgEl.className = 'shake incorrect-text';
             inputEl.value = '';
             inputEl.focus();
@@ -364,7 +364,7 @@
         document.getElementById('btnGroupNext').style.display = 'block';
         
         if (currentHeroIndex === shuffledHeroes.length - 1) {
-            nextBtn.innerText = '荣耀王者集结完成！查看最终星轨评级';
+            nextBtn.innerText = '王者集结完成！查看最终评级';
             nextBtn.onclick = endGame;
         } else {
             nextBtn.focus();
@@ -381,11 +381,11 @@
         isHintUsed = true;
         imgEl.classList.add('hint');
         
-        hintBtn.innerText = '已感应分路，荣耀积分下降';
+        hintBtn.innerText = '已感应分路，积分下降';
         hintBtn.disabled = true;
         
         const heroLane = shuffledHeroes[currentHeroIndex].lane;
-        msgEl.innerHTML = `建立荣耀连接，开启提示：这位英雄的主要荣耀分路是「${heroLane}」！`;
+        msgEl.innerHTML = `建立荣耀连接，开启提示：这位英雄的主要分路是「${heroLane}」！`;
         msgEl.className = 'hint-text';
         
         document.getElementById('userInput').focus();
@@ -415,7 +415,7 @@
         document.getElementById('btnGroupNext').style.display = 'block';
         
         if (currentHeroIndex === shuffledHeroes.length - 1) {
-            nextBtn.innerText = '荣耀王者集结完成！查看最终星轨评级';
+            nextBtn.innerText = '王者集结完成！查看最终评级';
             nextBtn.onclick = endGame;
         } else {
             nextBtn.focus();
@@ -435,20 +435,20 @@
         
         let evaluation;
         const perfectScore = totalRound * 20;
-        if (score === perfectScore) evaluation = "荣耀典藏之巅！荣耀全分路星轨感应完全同步！";
-        else if (score >= totalRound * 15) evaluation = "荣耀王者五分路全通！荣耀极度清晰！";
-        else if (score >= totalRound * 10) evaluation = "荣耀星耀，距离荣耀典藏只差一线荣耀感应";
-        else evaluation = "荣耀铂金，还需更多全分路荣耀连接与星轨尝试";
+        if (score === perfectScore) evaluation = "荣耀典藏之巅！全分路星轨感应完全同步！";
+        else if (score >= totalRound * 15) evaluation = "最强王者五分路全通！荣耀极度清晰！";
+        else if (score >= totalRound * 10) evaluation = "荣耀星耀，距离荣耀典藏只差一线";
+        else evaluation = "荣耀铂金，还需更多全分路尝试";
 
         gameWin.innerHTML = `
             <h1>🌟 王者集结完成 Ultra 50+ 🌟</h1>
             <br>
-            <div style="font-size: 20px; color: var(--accent-gold);">最终星轨感应积分</div>
+            <div style="font-size: 20px; color: var(--accent-gold);">最终星轨积分</div>
             <div style="font-size: 60px; font-weight: bold; color: var(--bright-gold);">${score}</div>
             <br>
             <div style="font-size: 16px; color: rgba(255,255,255,0.8); line-height: 1.8;">
                 你已成功建立对 ${totalRound} 位荣耀王者的星轨感应。<br>
-                荣耀感应评级：${evaluation}
+                感应评级：${evaluation}
             </div>
             <br>
             <button class="btn-submit" onclick="location.reload()">重新建立五分路星轨连接</button>
