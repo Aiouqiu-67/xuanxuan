@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>明日星象运势 - PRO版</title>
+    <style>
+        /* 动态流光背景 */
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            color: #fff;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* 毛玻璃面板 */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 24px;
+            padding: 40px;
+            width: 90%;
+            max-width: 420px;
+            text-align: center;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        h1 {
+            font-size: 26px;
+            font-weight: 600;
+            margin-bottom: 30px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* 输入框美化 */
+        input {
+            width: 80%;
+            padding: 15px;
+            margin-bottom: 25px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s;
+        }
+        
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        input:focus {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: #fff;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        /* 按钮美化 */
+        button {
+            background: rgba(255, 255, 255, 0.9);
+            color: #e73c7e;
+            border: none;
+            padding: 14px 40px;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+            background: #fff;
+        }
+
+        button:disabled {
+            background: rgba(255, 255, 255, 0.5);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 结果区域 */
+        #resultArea {
+            margin-top: 30px;
+            display: none;
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .lucky-word-container {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+        }
+
+        .lucky-word {
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: #ffe600;
+            text-shadow: 0 2px 10px rgba(255, 230, 0, 0.4);
+        }
+
+        .fortune-desc {
+            font-size: 16px;
+            line-height: 1.8;
+            text-align: left;
+            padding: 0 10px;
+            font-style: italic;
+            border-left: 3px solid #ffe600;
+        }
+
+        /* 加载动画 */
+        .loader {
+            display: none;
+            margin: 20px auto;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="glass-panel">
+    <h1>🔮 预见你的明日星象</h1>
+    <input type="text" id="userId" placeholder="输入 ID 建立你的专属星轨" autocomplete="off">
+    <br>
+    <button id="calcBtn" onclick="fetchFortune()">开启测算</button>
+    
+    <div class="loader" id="loader"></div>
+
+    <div id="resultArea">
+        <div class="lucky-word-container">
+            <div style="font-size: 12px; opacity: 0.8; margin-bottom: 5px;">明日核心词</div>
+            <div class="lucky-word" id="resultWord"></div>
+        </div>
+        <div style="font-size: 12px; opacity: 0.8; text-align: left; margin-bottom: 8px;">宇宙给你的箴言：</div>
+        <div class="fortune-desc" id="resultDesc"></div>
+    </div>
+</div>
+
+<script>
+    // 简单的本地哈希，用来固定算出明天的幸运词
+    function hashCode(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = Math.imul(31, hash) + str.charCodeAt(i);
+        }
+        return Math.abs(hash);
+    }
+
+    // 真正的联网测算函数
+    async function fetchFortune() {
+        const idInput = document.getElementById('userId');
+        const id = idInput.value.trim();
+        const btn = document.getElementById('calcBtn');
+        const loader = document.getElementById('loader');
+        const resultArea = document.getElementById('resultArea');
+
+        if (!id) {
+            alert('请先输入你的专属ID！');
+            idInput.focus();
+            return;
+        }
+
+        // 1. 触发加载状态 (UI 交互)
+        btn.style.display = 'none';
+        resultArea.style.display = 'none';
+        loader.style.display = 'block';
+
+        try {
+            // 2. 真正的网络请求：调用免费的 Hitokoto API 获取随机哲理句子
+            // 这里我们请求 'd' (文学) 或 'i' (诗词) 或 'k' (哲学) 分类的句子
+            const response = await fetch('https://v1.hitokoto.cn/?c=d&c=i&c=k');
+            
+            if (!response.ok) {
+                throw new Error('网络请求失败');
+            }
+            
+            const data = await response.json();
+            const networkFortune = data.hitokoto; // 拿到 API 返回的句子
+
+            // 3. 结合用户 ID 和日期生成本地的“幸运词”
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const dateStr = tomorrow.getFullYear() + "-" + (tomorrow.getMonth() + 1) + "-" + tomorrow.getDate();
+            const seed = hashCode(id + dateStr);
+            const words = ["觉醒", "蜕变", "自洽", "共鸣", "破局", "疗愈", "沉淀", "闪耀", "随性", "无畏"];
+            const luckyWord = words[seed % words.length];
+
+            // 4. 将网络数据和本地数据渲染到页面
+            document.getElementById('resultWord').innerText = luckyWord;
+            document.getElementById('resultDesc').innerText = "“" + networkFortune + "”";
+            
+        } catch (error) {
+            console.error('API请求出错:', error);
+            // 网络失败时的降级方案
+            document.getElementById('resultWord').innerText = "平静";
+            document.getElementById('resultDesc').innerText = "“星辰暂时被云层遮挡，但好运依然在暗中酝酿。保持内心的平静即可。”";
+        } finally {
+            // 5. 恢复 UI 状态，展示结果
+            loader.style.display = 'none';
+            btn.style.display = 'inline-block';
+            btn.innerText = '重新感应';
+            resultArea.style.display = 'block';
+        }
+    }
+</script>
+
+</body>
+</html>
